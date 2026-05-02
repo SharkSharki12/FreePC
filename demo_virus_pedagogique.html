@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Démonstration — Arnaques Virus</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#111;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* LAUNCHER */
+#launcher{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;background:#111}
+#launcher h1{color:#ff3333;font-size:28px;letter-spacing:2px}
+#launcher p{color:#888;font-size:14px;max-width:400px;text-align:center;line-height:1.6}
+#launcher button{background:#cc0000;color:white;border:none;padding:16px 40px;border-radius:6px;font-size:17px;cursor:pointer;font-weight:bold;letter-spacing:1px;transition:background .2s}
+#launcher button:hover{background:#aa0000}
+
+/* MAIN DEMO */
+#demo{display:none;flex-direction:column;flex:1;overflow:hidden}
+#demo.on{display:flex}
+
+/* Page content */
+#page{flex:1;position:relative;background:#0a0a1e;overflow:hidden}
+
+.bg-lines{position:absolute;inset:0;pointer-events:none}
+.bg-line{position:absolute;width:1px;background:linear-gradient(to bottom,transparent,rgba(255,0,0,.25),transparent);animation:fall linear infinite}
+@keyframes fall{from{top:-100%}to{top:200%}}
+
+/* Center content */
+.center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:1;width:90%;max-width:480px}
+.skull{font-size:70px;animation:pulse .5s infinite alternate;display:block}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.12)}}
+.main-title{font-size:26px;font-weight:bold;color:#ff2222;animation:flicker .7s infinite;margin:8px 0}
+@keyframes flicker{0%,100%{opacity:1}45%,55%{opacity:.15}}
+.main-sub{color:#ff6666;font-size:13px}
+.ip-info{color:#555;font-size:11px;font-family:monospace;margin-top:5px}
+
+.scan-box{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;padding:12px;margin:14px auto 0;text-align:left}
+.scan-lbl{color:#ff4444;font-size:11px;font-weight:bold;margin-bottom:6px}
+.scan-track{background:#1a1a1a;height:6px;border-radius:3px;overflow:hidden;margin-bottom:4px}
+.scan-fill{height:100%;background:#dd2200;border-radius:3px}
+.scan-file{font-size:10px;color:#444;font-family:monospace;height:13px;overflow:hidden}
+.threat-log{font-size:11px;color:#ff5555;margin-top:6px}
+.threat-log div{padding:1px 0}
+
+/* Pop-ups */
+.pop{position:absolute;z-index:50;border-radius:5px;box-shadow:0 10px 40px rgba(0,0,0,.85);animation:popIn .2s ease;cursor:default;min-width:270px;max-width:340px}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Windows Defender */
+.pop-win .wh{background:#0078d4;padding:8px 12px;border-radius:5px 5px 0 0;display:flex;justify-content:space-between;align-items:center}
+.pop-win .wh span{color:#fff;font-size:12px;font-weight:bold}
+.pop-win .wb{background:#fff;padding:14px;border-radius:0 0 5px 5px;font-size:12px;color:#222;line-height:1.55}
+.pop-win .wb strong{color:#c00;display:block;margin-bottom:4px}
+.pop-win .wbtns{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+.pop-win .br{background:#c00;color:#fff;border:none;padding:5px 13px;border-radius:3px;cursor:pointer;font-size:11px}
+.pop-win .bg{background:#f0f0f0;color:#333;border:1px solid #bbb;padding:5px 13px;border-radius:3px;cursor:pointer;font-size:11px}
+
+/* Chrome */
+.pop-ch .ch{background:#d32f2f;padding:8px 12px;border-radius:5px 5px 0 0;display:flex;justify-content:space-between;align-items:center}
+.pop-ch .ch span{color:#fff;font-size:12px;font-weight:bold}
+.pop-ch .cb{background:#fff8f8;padding:14px;border-radius:0 0 5px 5px;font-size:12px;color:#333;line-height:1.55}
+.pop-ch .cbtns{display:flex;gap:6px;margin-top:10px}
+.pop-ch .cb1{background:#d32f2f;color:#fff;border:none;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:11px;flex:1}
+.pop-ch .cb2{background:#eee;border:1px solid #ccc;padding:5px 12px;border-radius:3px;cursor:pointer;font-size:11px}
+
+/* XP style */
+.pop-xp{background:#ece9d8;border:2px solid #fff;outline:2px solid #7a7a7a}
+.pop-xp .xh{background:linear-gradient(to right,#0a246a,#a6b8e0);padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
+.pop-xp .xh span{color:#fff;font-size:12px;font-weight:bold}
+.pop-xp .xx{background:#c00;color:#fff;border:1px outset #f99;width:16px;height:14px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pop-xp .xb{padding:14px;font-size:12px;color:#000;display:flex;gap:10px;line-height:1.6}
+.pop-xp .xbtns{display:flex;justify-content:center;gap:8px;padding:0 14px 12px}
+.pop-xp .xbtn{background:#ece9d8;border:2px outset #fff;padding:4px 20px;font-size:12px;cursor:pointer}
+
+/* Orange urgency */
+.pop-urg{background:#111;border:2px solid #ff8800}
+.pop-urg .uh{background:#ff8800;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.pop-urg .uh span{color:#000;font-size:12px;font-weight:bold}
+.pop-urg .ub{padding:14px;color:#ff9900;font-size:12px;line-height:1.6}
+.pop-urg .uphone{font-size:20px;color:#fff;font-weight:bold;text-align:center;display:block;margin:8px 0;animation:blink 1s infinite}
+@keyframes blink{0%,100%{color:#fff}50%{color:#ff8800}}
+.pop-urg .ubtn{width:100%;background:#ff8800;color:#000;border:none;padding:8px;font-size:13px;font-weight:bold;cursor:pointer;margin-top:6px}
+
+/* Close button */
+.cx{background:none;border:none;cursor:pointer;color:#fff;font-size:14px;padding:0 2px;line-height:1}
+
+/* Download bar */
+#dlbar{position:absolute;bottom:0;left:0;right:0;background:#222;border-top:1px solid #444;padding:7px 14px;display:flex;align-items:center;gap:10px;font-size:11px;color:#ccc}
+.dl-name{color:#fff;flex:1}
+.dl-track{width:130px;background:#444;height:4px;border-radius:2px;overflow:hidden}
+.dl-fill{height:100%;background:#0078d4;transition:width .1s}
+.dl-pct{color:#4caf50;min-width:55px}
+
+/* BANDEAU */
+#bandeau{background:#1a1200;border-top:2px solid #cc8800;padding:9px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#bandeau .b-icon{font-size:18px}
+#bandeau .b-text{font-size:12px;color:#ffcc00;line-height:1.5;flex:1}
+#bandeau .b-text strong{font-size:13px;display:block}
+#bandeau .b-quit{background:#cc8800;color:#000;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- LAUNCHER -->
+<div id="launcher">
+  <h1></h1>
+  <p></p>
+  <button onclick="launch()">Achetez un nouveau pc</button>
+</div>
+
+<!-- DEMO -->
+<div id="demo">
+  <div class="browser-bar">
+    <span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>
+    <div class="url-bar">⚠ http://security-alert-windows-critical.xyz/scan?session=<span id="fakeid"></span></div>
+  </div>
+
+  <div id="page">
+    <div class="bg-lines" id="bglines"></div>
+
+    <div class="center">
+      <span class="skull">💀</span>
+      <div class="main-title">VOTRE ORDINATEUR EST INFECTÉ</div>
+      <div class="main-sub">5 virus critiques — Accès bancaire compromis</div>
+      <div class="ip-info">IP : <span id="fakeip"></span> — Localisation : Paris, France</div>
+      <div class="scan-box">
+        <div class="scan-lbl">Analyse système en cours...</div>
+        <div class="scan-track"><div class="scan-fill" id="sf" style="width:0%"></div></div>
+        <div class="scan-file" id="sfile"></div>
+        <div class="threat-log" id="tlog"></div>
+      </div>
+    </div>
+
+    <div id="pops"></div>
+
+    <div id="dlbar">
+      <span>📥</span>
+      <span class="dl-name">WindowsDefenderRepair_URGENT.exe</span>
+      <div class="dl-track"><div class="dl-fill" id="dlfill" style="width:0%"></div></div>
+      <span class="dl-pct" id="dlpct">0%</span>
+    </div>
+  </div>
+
+  <div id="bandeau">
+    <span class="b-icon">⚠</span>
+    <div class="b-text">
+      <strong></strong>
+    
+    </div>
+  </div>
+</div>
+
+<script>
+let ctx, timers=[], intervals=[], scanPct=0, dlPct=0, threatIdx=0, popId=0;
+
+const files=[
+  'C:\\Windows\\System32\\svchost.exe',
+  'C:\\Users\\User\\AppData\\Roaming\\tmp3a8f.dat',
+  'C:\\Program Files\\Google\\Chrome\\chrome.exe',
+  'C:\\Users\\User\\Documents\\mots_de_passe.txt',
+  'C:\\Windows\\explorer.exe',
+  'C:\\Users\\User\\Desktop\\banque_coords.pdf',
+  'C:\\Windows\\System32\\lsass.exe',
+  'C:\\Users\\User\\AppData\\Local\\Temp\\upd.exe'
+];
+const threats=[
+  'Trojan:Win32/Wacatac.B!ml',
+  'Spyware:Win32/Zbot.gen!V',
+  'Ransomware:Win32/WannaCrypt',
+  'PUA:Win32/CoinMiner.A',
+  'Backdoor:Win32/Bladabindi!ml'
+];
+
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+
+function beep(freq,dur,vol,type){
+  if(!ctx)return;
+  try{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type||'square';
+    o.frequency.value=freq;
+    g.gain.setValueAtTime(vol||0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur/1000);
+    o.start(); o.stop(ctx.currentTime+dur/1000);
+  }catch(e){}
+}
+
+function alarm(){
+  beep(880,180,0.35,'square');
+  setTimeout(()=>beep(440,180,0.35,'square'),200);
+  setTimeout(()=>beep(880,180,0.35,'square'),400);
+  setTimeout(()=>beep(440,180,0.35,'square'),600);
+}
+
+function launch(){
+  ctx=new(window.AudioContext||window.webkitAudioContext)();
+  document.getElementById('launcher').style.display='none';
+  document.getElementById('demo').classList.add('on');
+
+  // fake id & ip
+  document.getElementById('fakeid').textContent=Math.random().toString(36).substr(2,12);
+  document.getElementById('fakeip').textContent='92.'+rnd(1,254)+'.'+rnd(1,254)+'.'+rnd(1,254);
+
+  initBg();
+  startScan();
+  startDl();
+  alarm();
+
+  // first wave of popups
+  setTimeout(()=>spawn('win'),600);
+  setTimeout(()=>spawn('urg'),2000);
+  setTimeout(()=>spawn('ch'),3500);
+  setTimeout(()=>spawn('xp'),5000);
+
+  // recurring spam
+  const id=setInterval(()=>{
+    alarm();
+    const types=['win','urg','ch','xp'];
+    spawn(types[rnd(0,3)]);
+  },4500);
+  intervals.push(id);
+}
+
+function quit(){
+  timers.forEach(clearTimeout);
+  intervals.forEach(clearInterval);
+  timers=[]; intervals=[];
+  document.getElementById('pops').innerHTML='';
+  document.getElementById('demo').classList.remove('on');
+  document.getElementById('launcher').style.display='flex';
+  scanPct=0; dlPct=0; threatIdx=0;
+  document.getElementById('sf').style.width='0%';
+  document.getElementById('dlfill').style.width='0%';
+  document.getElementById('dlpct').textContent='0%';
+  document.getElementById('tlog').innerHTML='';
+}
+
+function initBg(){
+  const bg=document.getElementById('bglines');
+  bg.innerHTML='';
+  for(let i=0;i<35;i++){
+    const l=document.createElement('div');
+    l.className='bg-line';
+    l.style.left=Math.random()*100+'%';
+    l.style.height=rnd(15,45)+'%';
+    l.style.animationDuration=(Math.random()*3+1.5)+'s';
+    l.style.animationDelay=(Math.random()*4)+'s';
+    l.style.opacity=(Math.random()*.4+.1).toFixed(2);
+    bg.appendChild(l);
+  }
+}
+
+function startScan(){
+  const id=setInterval(()=>{
+    scanPct=(scanPct+1.2)%101;
+    document.getElementById('sf').style.width=scanPct+'%';
+    document.getElementById('sfile').textContent=files[rnd(0,files.length-1)];
+    if(Math.random()<0.028 && threatIdx<5){
+      const d=document.createElement('div');
+      d.textContent='⚠ '+threats[threatIdx++]+' DÉTECTÉ';
+      const log=document.getElementById('tlog');
+      log.appendChild(d);
+      if(log.children.length>4) log.removeChild(log.firstChild);
+    }
+  },110);
+  intervals.push(id);
+}
+
+function startDl(){
+  const id=setInterval(()=>{
+    if(dlPct<100){
+      dlPct+=0.4;
+      document.getElementById('dlfill').style.width=dlPct+'%';
+      document.getElementById('dlpct').textContent=Math.floor(dlPct)+'%';
+    } else {
+      document.getElementById('dlpct').textContent='✓ Terminé';
+      document.getElementById('dlpct').style.color='#ff4444';
+    }
+  },100);
+  intervals.push(id);
+}
+
+function rPos(){
+  const pg=document.getElementById('page');
+  const w=pg.offsetWidth, h=pg.offsetHeight;
+  return {
+    top: rnd(20, Math.max(30,h-290))+'px',
+    left: rnd(10, Math.max(20,w-350))+'px'
+  };
+}
+
+function closePop(id){ const el=document.getElementById(id); if(el)el.remove(); }
+
+function spawn(type){
+  const c=document.getElementById('pops');
+  const el=document.createElement('div');
+  const pid='p'+(++popId);
+  el.id=pid; el.className='pop pop-'+type;
+  const pos=rPos();
+  el.style.top=pos.top; el.style.left=pos.left;
+
+  const ip=document.getElementById('fakeip').textContent;
+
+  if(type==='win'){
+    el.innerHTML=`
+<div class="wh"><span>🛡 Sécurité Windows</span><button class="cx" onclick="closePop('${pid}')">✕</button></div>
+<div class="wb">
+  <strong>Menace détectée : Trojan:Win32/Wacatac.B!ml</strong>
+  Votre appareil est compromis. Des attaquants accèdent actuellement à vos fichiers et identifiants bancaires.<br><br>
+  <strong>Support Microsoft : 01 87 65 43 21</strong>
+  <div class="wbtns">
+    <button class="bg" onclick="closePop('${pid}')">Ignorer (risqué)</button>
+    <button class="br" onclick="closePop('${pid}')">Protéger maintenant</button>
+  </div>
+</div>`;
+  } else if(type==='urg'){
+    el.innerHTML=`
+<div class="uh"><span>⚠️ ALERTE SÉCURITÉ CRITIQUE</span><button class="cx" onclick="closePop('${pid}')">✕</button></div>
+<div class="ub">
+  Adresse IP <strong style="color:#fff">${ip}</strong> signalée comme compromise.<br>
+  Un ransomware est en train de chiffrer vos données.<br>
+  Contactez notre équipe immédiatement :
+  <span class="uphone">📞 0800 000 123</span>
+  <button class="ubtn" onclick="closePop('${pid}')">SÉCURISER MON PC MAINTENANT</button>
+</div>`;
+  } else if(type==='ch'){
+    el.innerHTML=`
+<div class="ch"><span>⛔ Alerte sécurité — Google Chrome</span><button class="cx" onclick="closePop('${pid}')">✕</button></div>
+<div class="cb">
+  Chrome a détecté un <strong>logiciel espion</strong> sur votre appareil.<br>
+  Vos mots de passe et données bancaires enregistrés dans Chrome ont peut-être été volés.<br><br>
+  Téléchargez le correctif de sécurité immédiatement.
+  <div class="cbtns">
+    <button class="cb2" onclick="closePop('${pid}')">Ignorer</button>
+    <button class="cb1" onclick="closePop('${pid}')">Télécharger la protection</button>
+  </div>
+</div>`;
+  } else if(type==='xp'){
+    el.innerHTML=`
+<div class="xh"><span>Erreur Système — Windows Security Center</span><button class="xx" onclick="closePop('${pid}')">✕</button></div>
+<div class="xb"><span style="font-size:34px">🛑</span>
+<div><strong>Erreur #0x80073b01 — Accès bloqué</strong><br>
+Votre ordinateur a été verrouillé par mesure de sécurité.<br>
+N'éteignez pas votre PC.<br>
+<strong>Appelez le support : 01 23 45 67 89</strong></div>
+</div>
+<div class="xbtns">
+  <button class="xbtn" onclick="closePop('${pid}')">Annuler</button>
+  <button class="xbtn" style="font-weight:bold" onclick="closePop('${pid}')">OK</button>
+</div>`;
+  }
+
+  drag(el);
+  c.appendChild(el);
+}
+
+function drag(el){
+  const head=el.querySelector('[class$="h"],[class*="h "]')||el.firstElementChild;
+  if(!head)return;
+  head.style.cursor='move';
+  let mx=0,my=0;
+  head.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    mx=e.clientX; my=e.clientY;
+    const move=e2=>{
+      el.style.left=(el.offsetLeft+(e2.clientX-mx))+'px';
+      el.style.top=(el.offsetTop+(e2.clientY-my))+'px';
+      mx=e2.clientX; my=e2.clientY;
+    };
+    const up=()=>{document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+  });
+}
+</script>
+</body>
+</html>
